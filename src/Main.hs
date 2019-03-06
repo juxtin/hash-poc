@@ -6,13 +6,13 @@ import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.IO as TLIO
 import qualified Hash
 
-nLazy = Hash.digestnLazy (const True)
-nStrict = Hash.digestnStrict (const True)
-d2n = Hash.digest2n (const True)
+nLazy = Hash.digestnLazy
+nStrict = Hash.digestnStrict
+d2n = Hash.digest2n
 
-nLazyIO = flip Hash.digestnLazyFile (const True)
-nStrictIO = flip Hash.digestnStrictFile (const True)
-d2nIO = flip Hash.digest2nFile (const True)
+nLazyIO = Hash.digestnLazyFile
+nStrictIO = Hash.digestnStrictFile
+d2nIO = Hash.digest2nFile
 
 exampleLazy n = TL.pack $ unlines $ replicate n "Lorem ipsum and stuff"
 exampleStrict n = T.pack $ unlines $ replicate n "Lorem ipsum and stuff"
@@ -30,40 +30,46 @@ main = do
   file10 <- writeExampleFile 10
   file100 <- writeExampleFile 100     -- about 2k
   file1000 <- writeExampleFile 1000   -- about 21k
-  file10000 <- writeExampleFile 10000 -- about 215k
-  defaultMain [ bgroup "lazy" [ bench "1" $ whnf nLazy (exampleLazy 1)
-                              , bench "10" $ whnf nLazy (exampleLazy 10)
-                              , bench "100" $ whnf nLazy (exampleLazy 100)
-                              , bench "10000" $ whnf nLazy (exampleLazy 10000)
+  file2000 <- writeExampleFile 2000   -- about 43k
+  file3000 <- writeExampleFile 3000   -- about 64k
+  file4000 <- writeExampleFile 4000   -- about 86k
+  file5000 <- writeExampleFile 5000   -- about 107k
+  file6000 <- writeExampleFile 6000   -- about 129k
+  defaultMain [ bgroup "100" [ bench "lazy" $ whnf nLazy (exampleLazy 100)
+                             , bench "strict" $ whnf nStrict (exampleStrict 100)
+                             , bench "2n" $ whnf d2n (exampleStrict 100)
+                             , bench "lazyIO" $ nfIO $ nLazyIO file100
+                             , bench "strictIO" $ nfIO $ nStrictIO file100
+                             , bench "2nIO" $ nfIO $ d2nIO file100
+                             ]
+              , bgroup "1000" [ bench "lazy" $ whnf nLazy (exampleLazy 1000)
+                              , bench "strict" $ whnf nStrict (exampleStrict 1000)
+                              , bench "lazyIO" $ nfIO $ nLazyIO file1000
+                              , bench "strictIO" $ nfIO $ nStrictIO file1000
                               ]
-              , bgroup "strict" [ bench "1" $ whnf nStrict (exampleStrict 1)
-                                , bench "10" $ whnf nStrict (exampleStrict 10)
-                                , bench "100" $ whnf nStrict (exampleStrict 100)
-                                , bench "1000" $ whnf nStrict (exampleStrict 1000)
-                                , bench "10000" $ whnf nStrict (exampleStrict 10000)
-                                ]
-              , bgroup "2n" [ bench "1" $ whnf d2n (exampleStrict 1)
-                            , bench "10" $ whnf d2n (exampleStrict 10)
-                            , bench "100" $ whnf d2n (exampleStrict 100)
-                            , bench "1000" $ whnf d2n (exampleStrict 1000)
-                            , bench "10000" $ whnf d2n (exampleStrict 10000)
-                            ]
-              , bgroup "lazyIO" [ bench "1" $ nfIO $ nLazyIO file1
-                                , bench "10" $ nfIO $ nLazyIO file10
-                                , bench "100" $ nfIO $ nLazyIO file100
-                                , bench "1000" $ nfIO $ nLazyIO file1000
-                                , bench "10000" $ nfIO $ nLazyIO file10000
-                                ]
-              , bgroup "strictIO" [ bench "1" $ nfIO $ nStrictIO file1
-                                  , bench "10" $ nfIO $ nStrictIO file10
-                                  , bench "100" $ nfIO $ nStrictIO file100
-                                  , bench "1000" $ nfIO $ nStrictIO file1000
-                                  , bench "10000" $ nfIO $ nStrictIO file10000
-                                  ]
-              , bgroup "2nIO" [ bench "1" $ nfIO $ d2nIO file1
-                              , bench "10" $ nfIO $ d2nIO file10
-                              , bench "100" $ nfIO $ d2nIO file100
-                              , bench "1000" $ nfIO $ d2nIO file1000
-                              , bench "10000" $ nfIO $ d2nIO file10000
+              , bgroup "2000" [ bench "lazy" $ whnf nLazy (exampleLazy 2000)
+                              , bench "strict" $ whnf nStrict (exampleStrict 2000)
+                              , bench "lazyIO" $ nfIO $ nLazyIO file2000
+                              , bench "strictIO" $ nfIO $ nStrictIO file2000
+                              ]
+              , bgroup "3000" [ bench "lazy" $ whnf nLazy (exampleLazy 3000)
+                              , bench "strict" $ whnf nStrict (exampleStrict 3000)
+                              , bench "lazyIO" $ nfIO $ nLazyIO file3000
+                              , bench "strictIO" $ nfIO $ nStrictIO file3000
+                              ]
+              , bgroup "4000" [ bench "lazy" $ whnf nLazy (exampleLazy 4000)
+                              , bench "strict" $ whnf nStrict (exampleStrict 4000)
+                              , bench "lazyIO" $ nfIO $ nLazyIO file4000
+                              , bench "strictIO" $ nfIO $ nStrictIO file4000
+                              ]
+              , bgroup "5000" [ bench "lazy" $ whnf nLazy (exampleLazy 5000)
+                              , bench "strict" $ whnf nStrict (exampleStrict 5000)
+                              , bench "lazyIO" $ nfIO $ nLazyIO file5000
+                              , bench "strictIO" $ nfIO $ nStrictIO file5000
+                              ]
+              , bgroup "6000" [ bench "lazy" $ whnf nLazy (exampleLazy 6000)
+                              , bench "strict" $ whnf nStrict (exampleStrict 6000)
+                              , bench "lazyIO" $ nfIO $ nLazyIO file6000
+                              , bench "strictIO" $ nfIO $ nStrictIO file6000
                               ]
               ]

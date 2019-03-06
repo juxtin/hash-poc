@@ -24,34 +24,80 @@ toFilter f ctx c =
   then SHA512.update ctx $ B8.singleton c
   else ctx
 
-digestnLazy' :: Filter -> TL.Text -> B8.ByteString
-digestnLazy' f text =
-  B16.encode $ SHA512.finalize ctx
+class HashCtx a where
+  getCtx :: a -> SHA512.Ctx
+  update :: a -> B8.ByteString -> a
+
+instance HashCtx SHA512.Ctx where
+  getCtx = id
+  update = SHA512.update
+
+data WsHashCtx =
+  WsHashCtx { ctx' :: SHA512.Ctx
+            , acceptWs :: Bool
+            }
+
+instance HashCtx WsHashCtx where
+  getCtx = ctx'
+  update wsCtx bs =
+    let newCtx = SHA512.update (ctx' wsCtx) bs in
+      wsCtx { ctx' = newCtx }
+
+setAccept :: Bool -> WsHashCtx -> WsHashCtx
+setAccept x wsCtx = wsCtx { acceptWs = x }
+
+normalize :: WsHashCtx -> Char -> WsHashCtx
+normalize wsCtx@(WsHashCtx _ True) char =
+  if isWS char
+  then setAccept False $ update wsCtx $ B8.singleton ' '
+  else setAccept True  $ update wsCtx $ B8.singleton char
+normalize wsCtx@(WsHashCtx _ False) char =
+  if isWS char
+  then wsCtx
+  else setAccept True $ update wsCtx $ B8.singleton char
+
+isWS :: Char -> Bool
+isWS = flip elem [' ', '\t', '\n', '\r']
+
+digestnLazy' :: HashCtx ctx => ctx -> (ctx -> Char -> ctx) -> TL.Text -> B8.ByteString
+digestnLazy' initCtx f text =
+  B16.encode $ SHA512.finalize $ getCtx ctx
   where
-    ctx = TL.foldl f ctx0 text
-    ctx0 = SHA512.init
+    ctx = TL.foldl f initCtx text
 
-digestnLazy :: (Char -> Bool) -> TL.Text -> B8.ByteString
-digestnLazy f = digestnLazy' (toFilter f)
+digestnLazy :: TL.Text -> B8.ByteString
+digestnLazy text =
+  let initCtx = WsHashCtx SHA512.init True in
+    digestnLazy' initCtx normalize text
 
-digestnStrict' :: Filter -> T.Text -> B8.ByteString
-digestnStrict' f text =
-  B16.encode $ SHA512.finalize ctx
+digestnStrict' :: HashCtx ctx => ctx -> (ctx -> Char -> ctx) -> T.Text -> B8.ByteString
+digestnStrict' initCtx f text =
+  B16.encode $ SHA512.finalize $ getCtx ctx
   where
-    ctx = T.foldl f ctx0 text
-    ctx0 = SHA512.init
+    ctx = T.foldl f initCtx text
 
-digestnStrict :: (Char -> Bool) -> T.Text -> B8.ByteString
-digestnStrict f = digestnStrict' (toFilter f)
+digestnStrict :: T.Text -> B8.ByteString
+digestnStrict text =
+  let initCtx = WsHashCtx SHA512.init True in
+    digestnStrict' initCtx normalize text
 
-digest2n :: (Char -> Bool) -> T.Text -> B8.ByteString
-digest2n f t = B16.encode $ SHA512.hash $ TE.encodeUtf8 $ T.filter f t
+digest2n :: T.Text -> B8.ByteString
+digest2n t = B16.encode $ SHA512.hash $ TE.encodeUtf8 $ T.reverse $ fst $ T.foldl f init t
+  where
+    init = (mempty :: T.Text, True)
+    f :: (T.Text, Bool) -> Char -> (T.Text, Bool)
+    f (text, True) char
+      | isWS char = (' ' `T.cons` text, False)
+      | otherwise = (char `T.cons` text, True)
+    f (text, False) char
+      | isWS char = (text, False)
+      | otherwise = (char `T.cons` text, True)
 
-digestnLazyFile :: FilePath -> (Char -> Bool) -> IO B8.ByteString
-digestnLazyFile path f = digestnLazy f <$> TLIO.readFile path
+digestnLazyFile :: FilePath -> IO B8.ByteString
+digestnLazyFile path = digestnLazy <$> TLIO.readFile path
 
-digestnStrictFile :: FilePath -> (Char -> Bool) -> IO B8.ByteString
-digestnStrictFile path f = digestnStrict f <$> TIO.readFile path
+digestnStrictFile :: FilePath ->  IO B8.ByteString
+digestnStrictFile path = digestnStrict <$> TIO.readFile path
 
-digest2nFile :: FilePath -> (Char -> Bool) -> IO B8.ByteString
-digest2nFile path f = digest2n f <$> TIO.readFile path
+digest2nFile :: FilePath -> IO B8.ByteString
+digest2nFile path = digest2n <$> TIO.readFile path
