@@ -16,14 +16,6 @@ import qualified Data.Text.IO as TIO
 import qualified Data.Text.Encoding as TE
 import qualified Data.ByteString.Base16 as B16
 
-type Filter = SHA512.Ctx -> Char -> SHA512.Ctx
-
-toFilter :: (Char -> Bool) -> Filter
-toFilter f ctx c =
-  if f c
-  then SHA512.update ctx $ B8.singleton c
-  else ctx
-
 class HashCtx a where
   getCtx :: a -> SHA512.Ctx
   update :: a -> B8.ByteString -> a
