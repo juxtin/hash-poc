@@ -1,0 +1,27 @@
+name:                hash-poc
+version:             0.1.0.0
+-- synopsis:
+-- description:
+homepage:            https://github.com/holguinj/hash-poc#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Justin Holguin
+maintainer:          justin.h.holguin@gmail.com
+copyright:           2018
+category:            Web
+build-type:          Simple
+cabal-version:       >=1.10
+extra-source-files:  README.md
+
+executable hash-poc
+  hs-source-dirs:      src
+  main-is:             Main.hs
+  other-modules:       Hash
+  default-language:    Haskell2010
+  build-depends:       base >= 4.7 && < 5
+                     , base16-bytestring >= 0.1.1.6
+                     , bytestring >= 0.10.8.2
+                     , cryptohash-sha512 >= 0.11
+                     , text >= 1.2.3.1
+                     , criterion >= 1.5.4.0
+
