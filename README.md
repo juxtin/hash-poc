@@ -10,6 +10,7 @@ browser to see some charts.
 
 (names below correspond to lines in the benchmarks)
 
+* `rawLazy`: hashing a string in-memory in one loop using `Data.Text.Lazy`
 * `lazy`: preparing and hashing a string in-memory in one loop using `Data.Text.Lazy`
 * `strict`: preparing and hashing a string in-memory in one loop using `Data.Text`
 * `lazyIO`: preparing and hashing a string read lazily from a file using `Data.Text.Lazy`

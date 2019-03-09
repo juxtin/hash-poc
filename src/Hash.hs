@@ -5,6 +5,7 @@ module Hash
     , digestnLazyFile
     , digestnStrictFile
     , digest2nFile
+    , digestRawLazy
     ) where
 
 import qualified Crypto.Hash.SHA512 as SHA512
@@ -50,6 +51,14 @@ normalize wsCtx@(WsHashCtx _ False) char =
 
 isWS :: Char -> Bool
 isWS = flip elem [' ', '\t', '\n', '\r']
+
+digestRawLazy :: TL.Text -> B8.ByteString
+digestRawLazy text =
+  B16.encode $ SHA512.finalize $ getCtx ctx
+  where
+    ctx = TL.foldl justUpdate SHA512.init text
+    justUpdate :: SHA512.Ctx -> Char -> SHA512.Ctx
+    justUpdate ctx char = update ctx (B8.singleton char)
 
 digestnLazy' :: HashCtx ctx => ctx -> (ctx -> Char -> ctx) -> TL.Text -> B8.ByteString
 digestnLazy' initCtx f text =
